@@ -2,6 +2,9 @@
 
 DeepSeek Harness 的余额悬浮窗插件 —— 实时查看你的 DeepSeek API 账户余额，以及每一轮对话花了多少钱。
 
+<img width="2120" height="1346" alt="image" src="https://github.com/user-attachments/assets/37811438-d36c-45f8-9446-6d536b1d5126" />
+
+
 ## 功能
 
 - **可拖动的悬浮窗**：自由拖动，松手自动吸附到屏幕左右边缘。
