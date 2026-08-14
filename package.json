@@ -1,0 +1,46 @@
+{
+  "name": "@dsh-external/dsh-deepseek-billing",
+  "version": "1.0.0",
+  "description": "DeepSeek Harness 余额悬浮窗插件：可拖动的余额面板，实时显示账户余额、上一轮对话余额与本轮花费。",
+  "type": "module",
+  "main": "lib/index.js",
+  "exports": {
+    ".": "./lib/index.js",
+    "./client": "./lib/client.js",
+    "./cordis.patch.yml": "./cordis.patch.yml",
+    "./package.json": "./package.json"
+  },
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "inject": [
+        "@deepseek-ai/dsh-client-runtime",
+        "@deepseek-ai/dsh-client-ui-slots"
+      ],
+      "platform": "web"
+    }
+  },
+  "peerDependencies": {
+    "@deepseek-ai/dsh-credentials": ">=0.0.1-rc.1 <0.2.0",
+    "@deepseek-ai/dsh-llm": ">=0.0.1-rc.1 <0.2.0",
+    "@deepseek-ai/dsh-subprocess": ">=0.0.1-rc.1 <0.2.0",
+    "@deepseek-ai/dsh-tools": ">=0.0.1-rc.1 <0.2.0",
+    "@deepseek-ai/dsh-host-webserver": ">=0.0.1-rc.1 <0.2.0",
+    "@deepseek-ai/cordis": ">=4.0.0-rc.7 <5.0.0",
+    "react": "^18.2.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/xiao-xiao-bai-ya/dsh-deepseek-billing.git"
+  },
+  "keywords": [
+    "deepseek",
+    "deepseek-harness",
+    "dsh",
+    "billing",
+    "balance"
+  ],
+  "license": "MIT"
+}
