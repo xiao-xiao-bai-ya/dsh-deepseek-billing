@@ -1,7 +1,7 @@
 {
   "name": "@dsh-external/dsh-deepseek-billing",
   "version": "1.0.0",
-  "description": "DeepSeek Harness 余额悬浮窗插件：可拖动的余额面板，实时显示账户余额、上一轮对话余额与本轮花费。",
+  "description": "DeepSeek Harness 余额悬浮窗插件：可拖动的余额面板，实时显示账户余额、对话框开始余额、上一轮对话余额与本轮花费（WebSocket 实时推送 + 刷新按钮）。",
   "type": "module",
   "main": "lib/index.js",
   "exports": {
@@ -22,8 +22,12 @@
       "platform": "web"
     }
   },
+  "dependencies": {
+    "ws": "^8.21.3"
+  },
   "peerDependencies": {
     "@deepseek-ai/dsh-credentials": ">=0.0.1-rc.1 <0.2.0",
+    "@deepseek-ai/dsh-home-paths": ">=0.0.1-rc.1 <0.2.0",
     "@deepseek-ai/dsh-llm": ">=0.0.1-rc.1 <0.2.0",
     "@deepseek-ai/dsh-subprocess": ">=0.0.1-rc.1 <0.2.0",
     "@deepseek-ai/dsh-tools": ">=0.0.1-rc.1 <0.2.0",
