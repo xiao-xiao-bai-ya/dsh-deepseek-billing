@@ -7,7 +7,7 @@
 - 你的 DeepSeek API 余额
 - 这个对话框开始时的余额（关页面再打开也不丢）
 - 上一轮对话结束时的余额
-- 本轮已经花了多少钱
+- 本轮已经花了多少钱（**边生成边实时跳动**，不是等一轮结束才做余额减法）
 - 余额低于 ¥2 时数字会变红提醒你充值
 
 ---
@@ -174,6 +174,7 @@ C:\Users\你的用户名\.dsh\profiles\web\package.json
 ## 给会一点技术的人
 
 - 结构：`lib/index.js` = Host 端，`lib/client.js` = 网页端。
+- 本轮花费：`llm/stream` 按 token 实时计价（内置平峰/峰谷价目表，`usage` 到达后自动替换为精确值）。
 - 数据文件：`~/.dsh/storages/deepseek-billing.json`
 - 接口：
   - HTTP：`/_dsh/deepseek-billing/snapshot?sessionId=xxx&refresh=1`
