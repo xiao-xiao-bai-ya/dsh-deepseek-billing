@@ -59,21 +59,17 @@ https://github.com/xiao-xiao-bai-ya/dsh-deepseek-billing
 
 ---
 
-## 第二步：找到 Harness 的插件目录
+## 第二步：把插件放到 local-plugins 目录
 
 打开 Windows 的 **文件资源管理器**，在顶部地址栏输入下面这行，然后回车（把 `你的用户名` 换成你电脑的用户名）：
 
 ```
-C:\Users\你的用户名\.dsh\profiles\web\node_modules\@dsh-external\
+C:\Users\你的用户名\.dsh\local-plugins\
 ```
 
-你会看到里面可能已经有其他插件文件夹。
+如果没有 `local-plugins` 文件夹，就右键新建一个。
 
-**如果里面已经有一个 `dsh-deepseek-billing` 文件夹**：
-
-- 右键它 → 删除（或者改名成 `dsh-deepseek-billing-old` 备份，更保险）。
-
-然后把第一步解压出来的那个文件夹，**整个复制**到这个 `@dsh-external` 目录里，并改名为：
+把第一步解压出来的那个文件夹，**整个复制**到这个 `local-plugins` 目录里，并改名为：
 
 ```
 dsh-deepseek-billing
@@ -82,8 +78,10 @@ dsh-deepseek-billing
 最终你的路径应该是：
 
 ```
-C:\Users\你的用户名\.dsh\profiles\web\node_modules\@dsh-external\dsh-deepseek-billing\
+C:\Users\你的用户名\.dsh\local-plugins\dsh-deepseek-billing\
 ```
+
+> 不要把它放进 `node_modules/@dsh-external/`。旧教程里的那种放法会让 pnpm 报 `Symlink path is the same as the target path`，导致以后 `dsh plugin add/remove` 失败。
 
 ---
 
@@ -101,7 +99,7 @@ C:\Users\你的用户名\.dsh\profiles\web\package.json
 
 ```json
 "dependencies": {
-  "@dsh-external/dsh-deepseek-billing": "1.0.0"
+  "@dsh-external/dsh-deepseek-billing": "link:../../local-plugins/dsh-deepseek-billing"
 }
 ```
 
