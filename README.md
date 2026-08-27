@@ -172,6 +172,17 @@ npm/git 方式：重跑一遍 `dsh plugin --profile web add <同一来源>`。
 - 打包：DSH 核心包全部声明在 `peerDependencies`，第三方依赖只有 `ws`；`dsh.bundle.patch` 指向 `cordis.patch.yml`——与 dsh-find-plugin、dsh-better-sidebar 等主流插件同一写法，`dsh plugin add` 可自动识别。
 - 依赖：`ws`（npm 公共包）+ `@deepseek-ai/dsh-*`（Harness 自带，peer 依赖）。
 
+### 本地开发（link 安装）的依赖解析与防坑
+
+**原理**：`dsh plugin --profile web add <本仓库绝对路径>` 装的是 `link:`（junction），Node 从插件**真实路径**（本仓库）向上解析依赖，天然走不到 DSH 主安装的依赖树——会报 `Cannot find package '@deepseek-ai/dsh-tools'`。
+
+**解法**：跑一次 `scripts/dev-setup.ps1`。它在 `repo\node_modules` 里建 junction 指向 DSH 主安装的嵌套依赖树（`npm root -g` 下 `@deepseek-ai\dsh\node_modules`）。这与 DSH 自带的 `$DSH_HOME/profiles/node_modules` 回退层是同一机制：Node 按 realpath 解析，插件与宿主共享同一物理实例，**不会**出现双副本（双副本正是当年 Symbol 错乱、工具全崩的根源——凡是物理复制一份核心包的安装方式都会复发）。
+
+**三条纪律**：
+1. **不要在本仓库里跑 `pnpm install`**——它会把 junction 覆盖/混入物理副本（`.npmrc` 的 `auto-install-peers=false` 只挡住 peer 包，`ws` 这类真依赖仍会被装成实体）。误跑之后：删掉 `node_modules`，重跑 `dev-setup.ps1`。
+2. 全局 `dsh` 升级后，junction 指向的路径不变（同一安装目录），一般无需重跑；若再报 `Cannot find package`，重跑 `dev-setup.ps1` 自愈（脚本自带 import 自检）。
+3. 从 GitHub/npm 正常安装（非 link）的用户**不需要**以上任何步骤——pnpm 会把插件装进 profile 目录内，`$DSH_HOME/profiles/node_modules` 回退层自动满足 peer 解析。
+
 ## License
 
 MIT
