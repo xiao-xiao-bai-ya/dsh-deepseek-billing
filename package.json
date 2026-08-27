@@ -1,7 +1,7 @@
 {
   "name": "@dsh-external/dsh-deepseek-billing",
-  "version": "1.0.0",
-  "description": "DeepSeek Harness 余额悬浮窗插件：可拖动的余额面板，实时显示账户余额、对话框开始余额、上一轮对话余额、本轮实时花费与上轮花费（llm/stream 按 token 计价，WebSocket 实时推送 + 刷新按钮）。",
+  "version": "1.1.0",
+  "description": "DeepSeek Harness 余额悬浮窗插件：可拖动的余额面板，实时显示账户余额、对话框开始余额、上一轮对话余额、本轮实时花费与上轮花费（llm/stream 按 token 计价，WebSocket 实时推送 + 刷新按钮）；点「更多」展开用量明细（每轮提问的时间/内容/模型/产品端/花费，支持今天/7天/30天/自定义日期段筛选）。",
   "type": "module",
   "main": "lib/index.js",
   "exports": {
