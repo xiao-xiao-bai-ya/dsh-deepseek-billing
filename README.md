@@ -102,7 +102,7 @@ dsh plugin --profile web add github:xiao-xiao-bai-ya/dsh-deepseek-billing   # �
 | 产品端 | 固定为 DSH |
 | 花费 | 这一轮实际花的钱（按 token 实时计价汇总），底部有合计 |
 
-> 口径说明：明细里一轮的花费 = 这一轮所有模型调用的实际费用总和（含上下文压缩、生成会话标题等辅助调用，如果它们发生在这一轮内）。辅助调用单独发生时不产生行。历史数据从安装本版本起开始积累。
+> 口径说明：明细里一轮的花费 = 这一轮所有 **DeepSeek 系模型**调用的实际费用总和（含上下文压缩、生成会话标题等辅助调用，如果它们发生在这一轮内）。辅助调用单独发生时不产生行。**非 DeepSeek 模型（如 GLM）也会记录一行用量（时间/提问/模型/产品端），但没有价目表，花费显示 `—`**。历史数据从安装本版本起开始积累。
 
 **「对话框开始余额」的小秘密**：只要你没有删除这个对话框，哪怕关掉页面、重新打开，它都还记得这个对话框刚开始时的余额。
 
@@ -163,7 +163,7 @@ npm/git 方式：重跑一遍 `dsh plugin --profile web add <同一来源>`。
 
 - 结构：`lib/index.js` = Host 端，`lib/client.js` = 网页端（原生 `React.createElement`，无构建步骤）。
 - 本轮花费：`llm/stream` 按 token 实时计价（内置平峰/峰谷价目表，`usage` 到达后自动替换为精确值）。
-- 用量明细：每轮结束（静默 3 秒判定）聚合一行写入账本；prompt 取本轮请求里最后一条含 text 的 user 消息，截断 120 字符；`purpose` 为 `compaction`/`session-title` 的辅助调用不产生行。
+- 用量明细：每轮结束（静默 3 秒判定）聚合一行写入账本；prompt 取本轮请求里最后一条含 text 的 user 消息，截断 120 字符；`purpose` 为 `compaction`/`session-title` 的辅助调用不产生行；**只有 DeepSeek 系模型（provider/model 含 deepseek）折算费用，其他模型 cost 为 null 显示 `—`**，「产品端」列显示 provider。
 - 数据文件：`~/.dsh/storages/deepseek-billing.json`（账本 version 4：`dialogStarts` + `usage`，上限 2000 条）。
 - 接口：
   - HTTP：`/_dsh/deepseek-billing/snapshot?sessionId=xxx&refresh=1`

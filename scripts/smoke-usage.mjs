@@ -81,6 +81,7 @@ async function* fakeStream() {
 }
 const gen = streamHandler({
   sessionId: 'sess-1',
+  provider: 'deepseek',
   model: 'deepseek-chat',
   messages: [
     { role: 'user', content: [{ type: 'text', text: '第一条历史提问' }] },
@@ -92,7 +93,7 @@ const gen = streamHandler({
 for await (const chunk of gen) { void chunk } // 消费整条流
 
 // 辅助调用（会话标题）：不应产生明细行
-const aux = streamHandler({ sessionId: 'sess-1', model: 'deepseek-chat', purpose: 'session-title', messages: [] }, async function* () { yield { type: 'usage', usage: { inputTokens: 10, outputTokens: 5 } } })
+const aux = streamHandler({ sessionId: 'sess-1', provider: 'deepseek', model: 'deepseek-chat', purpose: 'session-title', messages: [] }, async function* () { yield { type: 'usage', usage: { inputTokens: 10, outputTokens: 5 } } })
 for await (const c of aux) { void c }
 
 // 静默 3 秒判定：真实等过阈值再触发 2s interval（插件用 Date.now() 计时）
@@ -108,7 +109,7 @@ assert(Array.isArray(stored.usage) && stored.usage.length === 1, '辅助调用�
 const rec = stored.usage[0]
 assert(rec.prompt === PROMPT, 'prompt 取最后一条用户提问（跳过工具结果）', rec.prompt)
 assert(rec.model === 'deepseek-chat', 'model 记录正确', rec.model)
-assert(rec.product === 'DSH', 'product 固定 DSH', rec.product)
+assert(rec.provider === 'deepseek', 'provider 记录正确', rec.provider)
 assert(rec.sessionId === 'sess-1', 'sessionId 记录正确')
 assert(typeof rec.cost === 'number' && rec.cost > 0 && Number.isFinite(rec.cost), 'cost 为正数', rec.cost)
 assert(rec.calls === 1, 'calls 记录调用次数', rec.calls)
@@ -136,6 +137,18 @@ await new Promise((r) => setTimeout(r, 30))
 const stored2 = JSON.parse(files.get(join(dir, 'storages', 'deepseek-billing.json')))
 const lastRec = stored2.usage[stored2.usage.length - 1]
 assert(stored2.usage.length === 2 && lastRec.prompt.length === 120 && lastRec.prompt.endsWith('…'), '超长 prompt 截断到 120 字符并加省略号', lastRec.prompt.length)
+
+// ---------- 6b. GLM 轮：记用量但不计费（cost=null，provider=zai） ----------
+const glmPrompt = '用 glm 写点什么'
+const g1 = streamHandler({ sessionId: 'sess-3', provider: 'zai', model: 'glm-5.2', messages: [{ role: 'user', content: [{ type: 'text', text: glmPrompt }] }] }, async function* () { yield { type: 'text-delta', index: 0, text: 'x'.repeat(300) } ; yield { type: 'usage', usage: { inputTokens: 5000, outputTokens: 2000 } } })
+for await (const c of g1) { void c }
+await new Promise((r) => setTimeout(r, 3100))
+quiet.fn()
+await new Promise((r) => setTimeout(r, 30))
+const storedGlm = JSON.parse(files.get(join(dir, 'storages', 'deepseek-billing.json')))
+const glmRec = storedGlm.usage[storedGlm.usage.length - 1]
+assert(glmRec.prompt === glmPrompt && glmRec.provider === 'zai' && glmRec.model === 'glm-5.2', 'GLM 轮记录 prompt/provider/model', glmRec)
+assert(glmRec.cost === null, 'GLM 轮不计费（cost=null）', glmRec.cost)
 
 // ---------- 7. 客户端日期窗口公式镜像验证（与 client.js UsageView 同一套公式） ----------
 const DAY = 24 * 3600 * 1000
