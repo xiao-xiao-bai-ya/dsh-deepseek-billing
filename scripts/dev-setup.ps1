@@ -1,4 +1,4 @@
-# dsh-deepseek-billing 本地开发环境搭建（幂等，可重复运行）
+﻿# dsh-deepseek-billing 本地开发环境搭建（幂等，可重复运行）
 #
 # 原理：profile 用 link: 安装本插件时，Node 从插件「真实路径」（本仓库）向上解析依赖，
 #       走不到 DSH 主安装的依赖树。本脚本在 repo\node_modules 里建 Junction 指向主安装
@@ -27,6 +27,7 @@ if (-not (Test-Path $DshModules)) {
 $targets = @(
     @{ Link = 'node_modules\@deepseek-ai\dsh-tools';      Rel = '@deepseek-ai\dsh-tools' },
     @{ Link = 'node_modules\@deepseek-ai\dsh-home-paths'; Rel = '@deepseek-ai\dsh-home-paths' },
+    @{ Link = 'node_modules\@deepseek-ai\schemastery';   Rel = '@deepseek-ai\schemastery' },
     @{ Link = 'node_modules\ws';                          Rel = 'ws' }
 )
 foreach ($t in $targets) {
