@@ -15,10 +15,10 @@ function assert(cond, name, extra) {
   else { failed++; console.error('FAIL  ' + name + (extra !== undefined ? '  => ' + JSON.stringify(extra) : '')) }
 }
 
-// ---------- 1. 搭临时模块环境：stub 三个外部依赖 ----------
+// ---------- 1. 搭临时模块环境：stub 四个外部依赖 ----------
 const dir = mkdtempSync(join(tmpdir(), 'dsb-smoke-'))
 const nm = join(dir, 'node_modules')
-for (const p of ['@deepseek-ai/dsh-tools', '@deepseek-ai/dsh-home-paths', 'ws']) mkdirSync(join(nm, p), { recursive: true })
+for (const p of ['@deepseek-ai/dsh-tools', '@deepseek-ai/dsh-home-paths', 'ws', '@deepseek-ai/schemastery']) mkdirSync(join(nm, p), { recursive: true })
 
 writeFileSync(join(nm, '@deepseek-ai/dsh-tools/package.json'), JSON.stringify({ name: '@deepseek-ai/dsh-tools', type: 'module', main: 'index.js' }))
 writeFileSync(join(nm, '@deepseek-ai/dsh-tools/index.js'), 'export function defineTool(d) { return d }\n')
@@ -30,6 +30,13 @@ writeFileSync(join(nm, '@deepseek-ai/dsh-home-paths/index.js'),
 writeFileSync(join(nm, 'ws/package.json'), JSON.stringify({ name: 'ws', type: 'module', main: 'index.js' }))
 writeFileSync(join(nm, 'ws/index.js'), 'export class WebSocketServer { on() {} close() {} handleUpgrade() {} }\n')
 
+// 8.6 schemastery stub: 最小接口，让 Config schema 能声明通过
+writeFileSync(join(nm, '@deepseek-ai/schemastery/package.json'), JSON.stringify({ name: '@deepseek-ai/schemastery', type: 'module', main: 'index.js' }))
+writeFileSync(join(nm, '@deepseek-ai/schemastery/index.js'), `
+const noop = () => ({ default: noop, description: noop, required: noop })
+export default { object: noop, string: noop, number: noop, boolean: noop }
+`)
+
 copyFileSync(join(REPO, 'lib', 'index.js'), join(dir, 'index.js'))
 
 // ---------- 2. mock DSH ctx ----------
@@ -38,6 +45,14 @@ const fsMock = {
   resolve: async (p) => p,
   readText: async (p) => { const t = files.get(p); if (t === undefined) throw new Error('ENOENT: ' + p); return t },
   writeText: async (p, c) => { files.set(p, String(c)) },
+  rename: async (from, to) => {
+    const keyFrom = typeof from === 'string' ? from : from.targetKey
+    const keyTo = typeof to === 'string' ? to : to.targetKey
+    const content = files.get(keyFrom)
+    if (content === undefined) throw new Error('ENOENT: ' + keyFrom)
+    files.set(keyTo, content)
+    files.delete(keyFrom)
+  },
 }
 const routes = {}
 const intervals = []
@@ -63,6 +78,11 @@ const ctx = {
 }
 
 // ---------- 3. 真实导入插件并 apply ----------
+// 8.7: apply 前先放一个带 lastGood 的初始账本，验证 loadLedger 恢复 + fetch 失败时兜底
+files.set(join(dir, 'storages', 'deepseek-billing.json'), JSON.stringify({
+  version: 4, dialogStarts: {}, usage: [],
+  lastGood: { balance: 42.5, currency: 'CNY', at: 123456789 },
+}))
 const mod = await import(pathToFileURL(join(dir, 'index.js')).href)
 await mod.apply(ctx)
 
@@ -70,6 +90,15 @@ assert(typeof streamHandler === 'function', 'llm/stream 钩子已注册')
 assert(!!routes['/_dsh/deepseek-billing/usage'], 'usage 路由已注册')
 assert(!!routes['/_dsh/deepseek-billing/snapshot'], 'snapshot 路由仍注册')
 assert(intervals.some((i) => i.ms === 2000) && intervals.some((i) => i.ms === 5000), '原有 interval 定时器未变')
+assert(typeof mod.Config === 'object' || typeof mod.Config === 'function', '8.6: Config schema 已导出')
+
+// 8.7: lastGood 恢复——apply 后（loadLedger + 首次 fetchBalance 失败）current 仍为缓存值
+{
+  let sCode, sBody
+  await routes['/_dsh/deepseek-billing/snapshot']({ url: '/_dsh/deepseek-billing/snapshot' }, { writeHead: (c) => { sCode = c }, end: (b) => { sBody = b } })
+  const sJson = JSON.parse(sBody)
+  assert(sCode === 200 && sJson.current === 42.5, '8.7: fetch 失败时 lastGood 兜底显示缓存余额', sJson)
+}
 
 // ---------- 4. 模拟一轮对话：提问 → 流式（含 usage chunk）→ 静默结束 ----------
 const PROMPT = '帮我写一个冒烟测试，验证用量明细功能是否正常工作'
@@ -161,6 +190,13 @@ assert(label(w7.from).length === 10 && /\d{4}\/\d{2}\/\d{2}/.test(label(w7.from)
 const f = new Date('2026/08/22') && new Date('2026-08-22T00:00:00').getTime()
 const t = new Date('2026-08-28T00:00:00').getTime() + DAY
 assert(t - f === 7 * DAY, '截图示例 08/22-08/28 = 7 天窗口')
+
+// ---------- 8. 8.8 原子写验证：.tmp 被清理，目标文件存在且有完整 JSON ----------
+const ledgerPath = join(dir, 'storages', 'deepseek-billing.json')
+const tmpPath = ledgerPath + '.tmp'
+assert(files.get(tmpPath) === undefined, '8.8: .tmp 已被 rename 清理')
+const atomicStored = JSON.parse(files.get(ledgerPath))
+assert(atomicStored && Array.isArray(atomicStored.usage) && atomicStored.usage.length === 3, '8.8: 目标文件完整且数据正确', atomicStored.usage.length)
 
 console.log(`\n${passed} passed, ${failed} failed`)
 rmSync(dir, { recursive: true, force: true })
