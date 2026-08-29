@@ -131,6 +131,16 @@ const quiet = intervals.find((i) => i.ms === 2000)
 quiet.fn()
 await new Promise((r) => setTimeout(r, 30)) // finalizeUsage → saveLedger 异步写
 
+// ---------- 4b. 轮末结算：上轮花费 / 上次对话余额 / 对话框开始余额 ----------
+{
+  let sCode, sBody
+  await routes['/_dsh/deepseek-billing/snapshot']({ url: '/_dsh/deepseek-billing/snapshot?sessionId=sess-1' }, { writeHead: (c) => { sCode = c }, end: (b) => { sBody = b } })
+  const snap = JSON.parse(sBody)
+  assert(sCode === 200 && typeof snap.lastTurnCost === 'number' && snap.lastTurnCost > 0, '轮末结算：上轮花费已生成', snap)
+  assert(snap.last === 42.5, '轮末结算：上次对话余额已记录', snap)
+  assert(snap.dialogStartBalance === 42.5, '轮末结算：对话框开始余额已记录', snap)
+}
+
 // ---------- 5. 断言账本与查询 ----------
 const stored = JSON.parse(files.get(join(dir, 'storages', 'deepseek-billing.json')))
 assert(stored.version === 4, '账本版本为 4')
